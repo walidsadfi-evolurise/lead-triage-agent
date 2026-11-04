@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lead-triage-agent"
+version = "0.1.0"
+description = "Inbound lead qualification and routing agent: structured extraction, explainable scoring, rule-based routing, human escalation, evals."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Walid Sadfi", email = "walid.sadfi@evolurise.com" }]
+requires-python = ">=3.11"
+keywords = ["leads", "crm", "llm", "agent", "routing", "sales-ops", "evals"]
+dependencies = [
+  "pydantic[email]>=2.7",
+  "pydantic-settings>=2.3",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "typer>=0.12",
+  "rich>=13.7",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2", "ruff>=0.5", "mypy>=1.10", "types-PyYAML"]
+
+[project.scripts]
+triage = "triage.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "W", "SIM"]
+per-file-ignores = { "src/triage/cli.py" = ["B008"] }
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+packages = ["triage"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,109 @@
+# Routing for a multi-site service business (the demo is a dental / medical group;
+# swap teams, services and locations for yours). First matching rule wins.
+
+needs_human_below_confidence: 0.5
+auto_reply_min_tier: B
+
+weights:
+  intent: { appointment: 35, quote: 30, information: 15, partnership: 10, support: 5, other: 5, job: 0, spam: 0 }
+  urgency: { emergency: 20, high: 15, normal: 8, low: 2 }
+  has_phone: 10
+  has_company: 8
+  budget_mentioned: 10
+  timeline_mentioned: 7
+  detailed_message: 6
+  service_identified: 4
+  low_confidence_penalty: -8
+  free_mail_penalty: -4
+  tiers: { A: 70, B: 50, C: 30 }
+
+templates:
+  appointment_fr: |
+    Bonjour {first_name},
+    Merci pour votre message. Un membre de l'équipe vous rappelle sous {sla} h pour fixer un créneau.
+    Si c'est urgent, appelez-nous directement au numéro indiqué sur le site.
+  appointment_en: |
+    Hi {first_name},
+    Thanks for reaching out. Someone from the team will call you back within {sla} hours to find a slot.
+    If it's urgent, please call the number on our website.
+  quote_fr: |
+    Bonjour {first_name},
+    Merci pour votre demande. Nous revenons vers vous sous {sla} h avec une proposition.
+
+rules:
+  - name: emergency-any
+    match: { urgency: [emergency] }
+    team: on-call
+    sla_hours: 1
+    action: escalate
+
+  - name: spam
+    match: { intent: [spam] }
+    team: none
+    sla_hours: 0
+    action: discard
+
+  - name: jobs
+    match: { intent: [job] }
+    team: hr
+    sla_hours: 120
+    action: assign
+
+  - name: support-existing-customers
+    match: { intent: [support] }
+    team: support
+    sla_hours: 8
+    action: assign
+
+  - name: appointment-lyon
+    match: { intent: [appointment], location: [lyon, villeurbanne] }
+    team: lyon-front-desk
+    sla_hours: 4
+    action: auto_reply
+    reply_template: appointment_fr
+
+  - name: appointment-paris
+    match: { intent: [appointment], location: [paris, boulogne, neuilly] }
+    team: paris-front-desk
+    sla_hours: 4
+    action: auto_reply
+    reply_template: appointment_fr
+
+  - name: appointment-en
+    match: { intent: [appointment], language: [en] }
+    team: central-booking
+    sla_hours: 8
+    action: auto_reply
+    reply_template: appointment_en
+
+  - name: appointment-other
+    match: { intent: [appointment] }
+    team: central-booking
+    sla_hours: 8
+    action: assign
+
+  - name: quote-hot
+    match: { intent: [quote], tier: [A] }
+    team: sales-senior
+    owner: lead-sales
+    sla_hours: 4
+    action: auto_reply
+    reply_template: quote_fr
+
+  - name: quote
+    match: { intent: [quote] }
+    team: sales
+    sla_hours: 24
+    action: assign
+
+  - name: partnerships
+    match: { intent: [partnership] }
+    team: management
+    sla_hours: 72
+    action: assign
+
+default:
+  name: default
+  team: front-desk
+  sla_hours: 48
+  action: assign

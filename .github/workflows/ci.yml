@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+      - run: mypy
+      - run: pytest -q
+      - name: Eval gate
+        run: triage eval evalsets/demo.yaml --min-pass-rate 1.0
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: lead-triage-agent:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: |
+          docker run -d --name t -p 8000:8000 lead-triage-agent:ci
+          for i in $(seq 1 20); do curl -fsS localhost:8000/healthz && break; sleep 1; done
+          curl -fsS localhost:8000/healthz | grep -q '"status":"ok"'

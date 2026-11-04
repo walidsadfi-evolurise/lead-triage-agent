@@ -1,0 +1,81 @@
+# Labelled leads for `triage eval`. Add real (anonymised) leads here as they come in.
+- note: Lyon appointment, complete, FR → auto-reply to front desk
+  lead:
+    name: Claire Martin
+    email: claire.martin@example.org
+    phone: "+33 6 12 34 56 78"
+    message: "Bonjour, je souhaite prendre rendez-vous pour un détartrage à Lyon cette semaine si possible. Merci !"
+    source: /lyon/
+  expect_team: lyon-front-desk
+  expect_action: auto_reply
+  expect_intent: appointment
+  expect_needs_human: false
+
+- note: Emergency bleeding → escalate to on-call, human now
+  lead:
+    name: Marc
+    phone: "0612345678"
+    message: "Urgence, ma fille saigne beaucoup après une extraction ce matin, que faire ? On est à Villeurbanne."
+  expect_team: on-call
+  expect_action: escalate
+  expect_needs_human: true
+
+- note: Quote with budget, company, timeline → hot quote
+  lead:
+    name: Sophie Bernard
+    email: sophie@cabinet-bernard.fr
+    phone: "+33 4 72 00 00 00"
+    company: Cabinet Bernard
+    message: "Bonjour, nous souhaitons un devis pour équiper 3 cabinets en janvier, budget autour de 40 k€. Pouvez-vous nous envoyer une proposition rapidement ? Nous sommes à Lyon et ouverts à une visite sur site pour préciser le besoin et le planning."
+  expect_team: sales-senior
+  expect_tier: A
+  expect_intent: quote
+
+- note: Existing customer support issue → support
+  lead:
+    email: jp@example.com
+    message: "Bonjour, ma facture de septembre comporte une erreur de montant, pouvez-vous corriger ?"
+  expect_team: support
+  expect_action: assign
+  expect_intent: support
+
+- note: English appointment request → central booking, EN template
+  lead:
+    name: John Smith
+    email: john@example.com
+    message: "Hi, I would like to book an appointment for a check-up next week. Is it possible in the morning? Thanks."
+  expect_team: central-booking
+  expect_action: auto_reply
+  expect_intent: appointment
+
+- note: SEO spam → discard
+  lead:
+    email: promo@mail.ru
+    message: "We offer SEO services and backlinks with guaranteed ranking for your website. Buy followers today."
+  expect_action: discard
+  expect_intent: spam
+
+- note: Job application → HR
+  lead:
+    name: Lina
+    email: lina@example.com
+    message: "Bonjour, je vous envoie ma candidature pour un stage d'assistante dentaire à partir de septembre."
+  expect_team: hr
+  expect_intent: job
+
+- note: Vague message → default team, needs human
+  lead:
+    email: x@example.com
+    message: "Bonjour, je voulais savoir."
+  expect_team: front-desk
+  expect_needs_human: true
+
+- note: Sensitive medical info in a quote → never auto-reply
+  lead:
+    name: Paul
+    email: paul@example.com
+    phone: "+33600000000"
+    message: "Bonjour, je prends un traitement médical lourd et je voudrais un devis pour un implant à Paris, merci."
+  expect_intent: quote
+  expect_action: assign
+  expect_needs_human: true
