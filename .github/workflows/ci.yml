@@ -43,6 +43,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - run: |
-          docker run -d --name t -p 8000:8000 lead-triage-agent:ci
+          docker run -d --name triage -p 8000:8000 lead-triage-agent:ci
           for i in $(seq 1 20); do curl -fsS localhost:8000/healthz && break; sleep 1; done
           curl -fsS localhost:8000/healthz | grep -q '"status":"ok"'
