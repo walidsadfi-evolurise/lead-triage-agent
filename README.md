@@ -82,6 +82,27 @@ Returns the full `Decision` (extraction, score with factors, route, action, `nee
 
 Wire it from the contact form (a WordPress hook, Gravity Forms webhook, HubSpot workflow…), then act on the decision: create the CRM task for `route.team`, send `reply_draft` when `action == "auto_reply"`, page someone when `action == "escalate"`.
 
+### Public website form (no secret in the browser)
+
+A static site cannot hold the bearer token, so forms get their own endpoint. It is off until you list the origins allowed to call it:
+
+```bash
+export TRIAGE_FORM_ORIGINS="https://example.com,https://www.example.com"
+export TRIAGE_NOTIFY_URL="https://hooks.slack.com/…"      # optional: full decision forwarded here (n8n, CRM…)
+export TRIAGE_TURNSTILE_SECRET="0x…"                      # optional: Cloudflare Turnstile, verified server-side
+```
+
+```js
+// on the site
+const r = await fetch("https://triage.example.com/forms/contact", {
+  method: "POST", headers: { "content-type": "application/json" },
+  body: JSON.stringify({ name, email, phone, message, page: location.pathname, website: "" }) // `website` = honeypot, keep empty
+});
+const { reference, sla_hours, next } = await r.json();   // next: "reply" | "human"
+```
+
+What `POST /forms/{form_id}` does, in order: refuses any `Origin` not in the allow-list (403, CORS headers only for listed origins) → answers a filled honeypot with a fake success (202) and processes nothing → per-IP sliding-window rate limit (`TRIAGE_FORM_RATE_LIMIT` per `TRIAGE_FORM_RATE_WINDOW_SECONDS`, default 5 / 10 min, 429) → optional Turnstile check (400) → same decision pipeline, audited, deduplicated (a double submit gets the same receipt and triggers nothing twice) → notification to `TRIAGE_NOTIFY_URL` in the background → **a receipt that exposes nothing**: `{"status":"received","reference":"3f9c1a2b","sla_hours":4,"next":"reply"}`. Team, score, tier and reasons never leave the server through this endpoint.
+
 ## Configuration
 
 | Variable | Default | |
@@ -92,6 +113,10 @@ Wire it from the contact form (a WordPress hook, Gravity Forms webhook, HubSpot 
 | `TRIAGE_LLM_MODEL` | `claude-haiku-4-5` | |
 | `TRIAGE_API_TOKEN` | – | bearer token for the webhook |
 | `TRIAGE_DEDUPE` | `true` | reject already-seen leads |
+| `TRIAGE_FORM_ORIGINS` | – | comma-separated origins allowed on `/forms/*`; empty = endpoint off |
+| `TRIAGE_FORM_RATE_LIMIT` / `_WINDOW_SECONDS` | `5` / `600` | submissions per IP per window |
+| `TRIAGE_TURNSTILE_SECRET` | – | Cloudflare Turnstile server key; verified when set |
+| `TRIAGE_NOTIFY_URL` / `TRIAGE_NOTIFY_TOKEN` | – | where form decisions are POSTed (Bearer optional) |
 
 `routing.yaml` in this repo is a working example for a multi-site clinic group (Lyon, Paris, English speakers, on-call, HR, support). Replace teams, services and locations with yours; keep the emergency rule first.
 
