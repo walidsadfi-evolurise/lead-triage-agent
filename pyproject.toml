@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lead-triage-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Inbound lead qualification and routing agent: structured extraction, explainable scoring, rule-based routing, human escalation, evals."
 readme = "README.md"
 license = { text = "MIT" }
